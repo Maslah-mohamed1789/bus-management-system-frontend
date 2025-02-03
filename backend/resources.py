@@ -78,35 +78,50 @@ class PassengerListResource(Resource):
         return passenger.to_dict(), 201
 
 # ----------------- Routeline Resource -----------------
+# ----------------- Routeline Resource -----------------
 class RoutelineResource(Resource):
     def get(self, routeline_id):
         routeline = Routeline.query.get_or_404(routeline_id)
-        return routeline.to_dict()
+        return routeline.to_dict(), 200
 
     def put(self, routeline_id):
         routeline = Routeline.query.get_or_404(routeline_id)
         parser = get_parser({'name': str, 'bus_id': int})
         args = parser.parse_args()
-        routeline.name = args['name']
-        routeline.bus_id = args['bus_id']
-        db.session.commit()
-        return routeline.to_dict()
+        
+        try:
+            routeline.name = args['name']
+            routeline.bus_id = args['bus_id']
+            db.session.commit()
+            return routeline.to_dict(), 200
+        except Exception as e:
+            db.session.rollback()
+            return {"error": str(e)}, 500
 
     def delete(self, routeline_id):
         routeline = Routeline.query.get_or_404(routeline_id)
-        db.session.delete(routeline)
-        db.session.commit()
-        return {'message': 'Routeline deleted'}
+        try:
+            db.session.delete(routeline)
+            db.session.commit()
+            return {'message': 'Routeline deleted successfully'}, 200
+        except Exception as e:
+            db.session.rollback()
+            return {"error": str(e)}, 500
 
 # ----------------- Routeline List Resource -----------------
 class RoutelineListResource(Resource):
     def get(self):
-        return [routeline.to_dict() for routeline in Routeline.query.all()]
+        return [routeline.to_dict() for routeline in Routeline.query.all()], 200
 
     def post(self):
         parser = get_parser({'name': str, 'bus_id': int})
         args = parser.parse_args()
-        routeline = Routeline(**args)
-        db.session.add(routeline)
-        db.session.commit()
-        return routeline.to_dict(), 201
+
+        try:
+            routeline = Routeline(**args)
+            db.session.add(routeline)
+            db.session.commit()
+            return routeline.to_dict(), 201
+        except Exception as e:
+            db.session.rollback()
+            return {"error": str(e)}, 500
